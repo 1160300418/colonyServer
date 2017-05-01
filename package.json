@@ -1,0 +1,16 @@
+{
+  "name": "colonyserver",
+  "version": "0.5.0",
+  "description": "the game server for colony",
+  "main": "server.js",
+  "dependencies": {
+    "ws": "^2.3.1"
+  },
+  "devDependencies": {},
+  "scripts": {
+    "test": "make test",
+    "start": "node server.js"
+  },
+  "author": "w12101111",
+  "license": "GPL-3.0"
+}
