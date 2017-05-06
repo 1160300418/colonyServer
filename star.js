@@ -31,8 +31,8 @@ Star.prototype = {
                 };
             } else {
                 return {
-                    x: this.a * Math.cos(this.t + time) + this.ox,
-                    y: this.b * Math.sin(this.t + time) + this.oy
+                    x: this.a * Math.cos(this.t * 2 * Math.PI+ time) + this.ox,
+                    y: this.b * Math.sin(this.t * 2 * Math.PI+ time) + this.oy
                 };
             }
         } else {

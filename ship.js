@@ -41,6 +41,7 @@ Ship.prototype = {
     },
     arrive: function () {
         stars[this.to].in(this.population, this.camp);
+        //stars.splice(stars.indexOf(this),1);
         delete ships[this.index];
     },
     array: function () {
