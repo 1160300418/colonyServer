@@ -115,12 +115,12 @@ function openMsg(message) {
     console.log("received a message:\n"+message);
     try {
         msg = JSON.parse(message);
-        if (data.type == "camp") {
+        if (msg.type == "camp") {
             camp = msg.camp;
         }
         if (msg.type == "mapload") {
             data.maps.push(msg.map);
-            mapSelect = data.maps.length - 1;
+            mapSelect = data.maps.length;
             window.removeEventListener("resize", title);
             loadMap();
         }
@@ -128,7 +128,7 @@ function openMsg(message) {
         console.log(e);
         console.log(message);
     }
-    console.log(data);
+    console.log(msg);
 }
 
 function login() {
