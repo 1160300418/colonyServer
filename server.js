@@ -69,8 +69,10 @@ var wss = new Wss({
 });
 
 wss.broadcast = function broadcast(msg) {
+    console.log("broadcast one message\n" + msg);
     wss.clients.forEach(function each(client) {
         if (client.readyState === client.OPEN && typeof client.id != "undefined") {
+            console.log(client.id);
             client.send(msg);
         }
     });
@@ -95,9 +97,13 @@ wss.on('connection', function (ws) {
                             type: "exit",
                             reason: "administrator is existent"
                         }));
-                    }else{
-                        admin=ws;
-                        ws.isadmin=true;
+                    } else {
+                        admin = ws;
+                        ws.isadmin = true;
+                        ws.send(JSON.stringify({
+                            type: "camp",
+                            camp: 0
+                        }));
                         return;
                     }
                 }
@@ -121,6 +127,12 @@ wss.on('connection', function (ws) {
                         type: "camp",
                         camp: ws.camp
                     }));
+                    if (data.map) {
+                        ws.send(JSON.stringify({
+                            type: "mapload",
+                            map: data.map
+                        }));
+                    }
                     clients.push(ws);
                 }
                 return;

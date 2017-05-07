@@ -16,6 +16,7 @@ var camp = 1,
     zoom = 1,
     fps = 60,
     mapSelect;
+    uievent = false;
 
 var innerMapData = {
     "maps": [
@@ -147,7 +148,7 @@ var resValue = {
 };
 
 
-var data = [];
+var data = {};
 var stars = [];
 var ships = [];
 
@@ -327,9 +328,6 @@ function main(status) {
     $("button.choose_map").click(function () {
         mapSelect = parseInt($(this).attr("id").substring(3)); //mapX
         $("button.choose_map").hide();
-        if (!status) {
-            controlUI();
-        }
         if (!isadmin) {
             loadMap();
         } else {
@@ -356,10 +354,14 @@ function loadMap() {
     $("#range").show();
     window.requestAnimationFrame(animation);
     ai();
+    controlUI();
     background.src = "./images/background.jpg";
 }
 
 function controlUI() {
+    if(uievent){
+        return;
+    }
     canvas.addEventListener("touchstart", function (e) {
         select(e);
         e.preventDefault();
@@ -399,6 +401,7 @@ function controlUI() {
         pause = true;
         main(3);
     };
+    uievent=true;
 }
 
 function select(e) {

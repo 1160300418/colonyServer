@@ -119,10 +119,15 @@ function openMsg(message) {
             camp = msg.camp;
         }
         if (msg.type == "mapload") {
+            if(!data.maps)data.maps=[];
             data.maps.push(msg.map);
             mapSelect = data.maps.length;
             window.removeEventListener("resize", title);
             loadMap();
+        }
+        if(msg.type == "exit"){
+            lockReconnect=true;
+            reconnect(wsUrl);
         }
     } catch (e) {
         console.log(e);
