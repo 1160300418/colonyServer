@@ -61,7 +61,11 @@ server.listen(httpport);
 console.log("Server is running at " + httpport);
 
 var clients = [];
-var data = {};
+var data = {
+    stars: [],
+    ships: [],
+    maxCamp: 6
+};
 var admin;
 
 var wss = new Wss({
@@ -88,62 +92,26 @@ wss.on('connection', function (ws) {
         console.log("received a message:\n" + message);
         try {
             msg = JSON.parse(message);
-            if (msg.type == "login") {
-                ws.id = msg.id;
-                ws.uuid = msg.uuid;
-                if (ws.id == "admin") {
-                    if (admin) {
-                        ws.send(JSON.stringify({
-                            type: "exit",
-                            reason: "administrator is existent"
-                        }));
-                    } else {
-                        admin = ws;
-                        ws.isadmin = true;
-                        ws.send(JSON.stringify({
-                            type: "camp",
-                            camp: 0
-                        }));
-                        return;
-                    }
-                }
-                var repeatId = false;
-                for (var i = 0; !repeatId && i < clients.length; i++) {
-                    if (clients[i] && clients[i].id == ws.id) {
-                        repeatId = true;
-                        if (ws.uuid == clients[i].uuid) {
-                            clients[i] = ws;
-                        } else {
-                            ws.send(JSON.stringify({
-                                type: "exit",
-                                reason: "You have the same id with another user"
-                            }));
+            switch (msg.type) {
+                case "login":
+                    login(ws, msg);
+                    break;
+                case "mapUpload":
+                    data.map = msg.map.map;
+                    data.maxCamp = msg.map.maxCamp;
+                    data.equality = msg.map.equality
+                    wss.broadcast(JSON.stringify({
+                        type: "mapload",
+                        map: {
+                            "map": data.map,
+                            "equality": data.equality,
+                            "maxCamp": data.maxCamp
                         }
-                    }
-                }
-                if (!repeatId) {
-                    ws.camp = clients.length + 1;
-                    ws.send(JSON.stringify({
-                        type: "camp",
-                        camp: ws.camp
                     }));
-                    if (data.map) {
-                        ws.send(JSON.stringify({
-                            type: "mapload",
-                            map: data.map
-                        }));
-                    }
-                    clients.push(ws);
-                }
-                return;
-            }
-            if (msg.type == "mapUpload") {
-                data.map = msg.map;
-                data.maxCamp = msg.map.length;
-                wss.broadcast(JSON.stringify({
-                    type: "mapload",
-                    map: msg.map
-                }));
+                    break;
+                case "ship":
+                    data.ships.push(new Ship(shipArray));
+                    break;
             }
         } catch (e) {
             console.log(e);
@@ -151,3 +119,63 @@ wss.on('connection', function (ws) {
         }
     });
 });
+
+function login(ws, msg) {
+    ws.id = msg.id;
+    ws.uuid = msg.uuid;
+    if (ws.id == "admin") {
+        if (admin) {
+            ws.send(JSON.stringify({
+                type: "exit",
+                reason: "administrator is existent"
+            }));
+        } else {
+            admin = ws;
+            ws.isadmin = true;
+            ws.send(JSON.stringify({
+                type: "camp",
+                camp: 0
+            }));
+            return;
+        }
+    }
+    var repeatId = false;
+    for (var i = 0; !repeatId && i < clients.length; i++) {
+        if (clients[i] && clients[i].id == ws.id) {
+            repeatId = true;
+            if (ws.uuid == clients[i].uuid) {
+                clients[i] = ws;
+            } else {
+                ws.send(JSON.stringify({
+                    type: "exit",
+                    reason: "You have the same id with another user"
+                }));
+            }
+        }
+    }
+    if (!repeatId) {
+        if (clients.length >= data.maxCamp) {
+            ws.send(JSON.stringify({
+                type: "exit",
+                reason: "The players reach the upper limit of server"
+            }));
+            return;
+        }
+        ws.camp = clients.length + 1;
+        ws.send(JSON.stringify({
+            type: "camp",
+            camp: ws.camp
+        }));
+        if (data.map) {
+            ws.send(JSON.stringify({
+                type: "mapload",
+                map: {
+                    "map": data.map,
+                    "equality": data.equality,
+                    "maxCamp": data.maxCamp
+                }
+            }));
+        }
+        clients.push(ws);
+    }
+}
