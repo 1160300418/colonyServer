@@ -252,18 +252,18 @@ function drawBackground() {
 }
 
 
-function shipOut(from, to, camp, ratio) {
+function shipOut(from, to, camp, ratio,isReceive) {
     if (from === to) return;
     if (!stars[from].population[camp]) return;
     var movePopulation = parseInt((stars[from].population[camp] * ratio).toFixed());
     stars[from].out(movePopulation, camp);
     var shipArray = [stars[from].x, stars[from].y, from, to, camp, movePopulation, stars[from].x, stars[from].y]
     var aship = new Ship(shipArray /*, ships.length*/ );
-    if (connected) {
+    if (connected&&!isReceive) {
         sendMsg(JSON.stringify({
             type: "ship",
-            ship: shipArray
-        }))
+            ship: [from, to, camp, ratio]
+        }));
     }
     ships.push(aship);
 }

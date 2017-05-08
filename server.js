@@ -110,7 +110,8 @@ wss.on('connection', function (ws) {
                     }));
                     break;
                 case "ship":
-                    data.ships.push(new Ship(shipArray));
+                    //shipOut(msg.ship[1], msg.ship[2], msg.ship[3], msg.ship[4]);
+                    wss.broadcast(message);
                     break;
             }
         } catch (e) {

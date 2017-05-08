@@ -112,22 +112,27 @@ function openMsg(message) {
         document.getElementById("input_ping").value = 'ping: ' + ping.toFixed() + "ms";
         return;
     }
-    console.log("received a message:\n"+message);
+    console.log("received a message:\n" + message);
     try {
         msg = JSON.parse(message);
-        if (msg.type == "camp") {
-            camp = msg.camp;
-        }
-        if (msg.type == "mapload") {
-            if(!data.maps)data.maps=[];
-            data.maps.push(msg.map);
-            mapSelect = data.maps.length;
-            window.removeEventListener("resize", title);
-            loadMap();
-        }
-        if(msg.type == "exit"){
-            lockReconnect=true;
-            reconnect(wsUrl);
+        switch (msg.type) {
+            case "camp":
+                camp = msg.camp;
+                break;
+            case "mapload":
+                if (!data.maps) data.maps = [];
+                data.maps.push(msg.map);
+                mapSelect = data.maps.length;
+                window.removeEventListener("resize", title);
+                loadMap();
+                break;
+            case "exit":
+                lockReconnect = true;
+                reconnect(wsUrl);
+                break;
+            case "ship":
+                shipOut(msg.ship[0], msg.ship[1], msg.ship[2], msg.ship[3],true);
+                break;
         }
     } catch (e) {
         console.log(e);
@@ -137,7 +142,7 @@ function openMsg(message) {
 }
 
 function login() {
-    if(id == "admin"){
+    if (id == "admin") {
         isadmin = true;
     }
     uuid = creatuuid();
