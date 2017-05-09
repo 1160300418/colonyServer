@@ -190,7 +190,7 @@ Star.prototype = {
         if (!this.population[camp]) this.population[camp] = 0;
         this.population[camp] += n;
     },
-    array: function () {
+    converter: function () {
         return [this.x,
             this.y,
             this.size,

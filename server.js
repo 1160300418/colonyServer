@@ -2,8 +2,7 @@ var http = require('http');
 var url = require('url');
 var Wss = require('ws').Server;
 var fs = require('fs');
-var Ship = require('./ship.js');
-var Star = require("./star.js");
+var colony = require('./colony.js');
 
 var mimetype = {
     'txt': 'text/plain',
@@ -62,11 +61,13 @@ console.log("Server is running at " + httpport);
 
 var clients = [];
 var data = {
+    map:undefined,
     stars: [],
     ships: [],
     maxCamp: 6
 };
 var admin;
+var running = false;
 
 var wss = new Wss({
     port: wsport
@@ -108,9 +109,16 @@ wss.on('connection', function (ws) {
                             "maxCamp": data.maxCamp
                         }
                     }));
+                    setTimeout(function(){
+                        wss.broadcast(JSON.stringify({
+                            type:"start"
+                        }))
+                        colony.loadMap(data);
+                        running = true;
+                    },1000);
                     break;
                 case "ship":
-                    //shipOut(msg.ship[1], msg.ship[2], msg.ship[3], msg.ship[4]);
+                    colony.shipOut(msg.ship[0], msg.ship[1], msg.ship[2], msg.ship[3],data);
                     wss.broadcast(message);
                     break;
             }
@@ -119,6 +127,14 @@ wss.on('connection', function (ws) {
             console.log(message);
         }
     });
+    setInterval(function(){
+        if(running){
+            wss.broadcast(JSON.stringify({
+                type:"sync",
+                data:colony.converter(data)
+            }));
+        }
+    },3000);
 });
 
 function login(ws, msg) {

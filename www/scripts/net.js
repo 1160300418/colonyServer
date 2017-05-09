@@ -123,6 +123,8 @@ function openMsg(message) {
                 if (!data.maps) data.maps = [];
                 data.maps.push(msg.map);
                 mapSelect = data.maps.length;
+                break;
+            case "start":
                 window.removeEventListener("resize", title);
                 loadMap();
                 break;
@@ -131,7 +133,7 @@ function openMsg(message) {
                 reconnect(wsUrl);
                 break;
             case "ship":
-                shipOut(msg.ship[0], msg.ship[1], msg.ship[2], msg.ship[3],true);
+                shipOut(msg.ship[0], msg.ship[1], msg.ship[2], msg.ship[3], true);
                 break;
         }
     } catch (e) {

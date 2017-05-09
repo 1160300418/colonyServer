@@ -56,7 +56,7 @@ Ship.prototype = {
         ctx.lineTo(this.x + this.disX / this.dis * this.population, this.y + this.disY / this.dis * this.population);
         ctx.stroke();
     },
-    array: function () {
+    converter: function () {
         return [this.x,
             this.y,
             this.from,

@@ -147,3 +147,7 @@ Star.prototype = {
     }
 };
 module.exports = Star;
+var config;
+exports.config = function(conf){
+    config=conf;
+}

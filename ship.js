@@ -1,4 +1,4 @@
-function Ship(data, index) {
+function Ship(data/*, index*/) {
     this.x = data[0];
     this.y = data[1];
     this.from = data[2];
@@ -7,10 +7,11 @@ function Ship(data, index) {
     this.population = data[5];
     this.fromX = data[6];
     this.fromY = data[7];
-    this.index = index;
+    //this.index = index;
 }
 Ship.prototype = {
     move: function () {
+        try{
         if (stars[this.to].a) {
             this.disX = stars[this.to].x - this.fromX;
             this.disY = stars[this.to].y - this.fromY;
@@ -27,13 +28,16 @@ Ship.prototype = {
             }
         } else {
             this.disX = stars[this.to].x - this.fromX;
-            this.disY = stars[this.to].y - this.fromX;
+            this.disY = stars[this.to].y - this.fromY;
             this.dis = Math.sqrt(this.disX * this.disX + this.disY * this.disY);
             this.x += this.disX / this.dis * config.shipSpeed * config.globalSpeed / fps;
             this.y += this.disY / this.dis * config.shipSpeed * config.globalSpeed / fps;
             if ((this.x - stars[this.to].x) * this.disX > 0 || (this.y - stars[this.to].y) * this.disY > 0) {
                 this.arrive();
             }
+        }}catch(e){
+            console.log(e);
+            console.log(stars);
         }
     },
     shot: function () {
@@ -41,8 +45,8 @@ Ship.prototype = {
     },
     arrive: function () {
         stars[this.to].in(this.population, this.camp);
-        //stars.splice(stars.indexOf(this),1);
-        delete ships[this.index];
+        ships.splice(ships.indexOf(this),1);
+        //delete ships[this.index];
     },
     array: function () {
         return [this.x,
@@ -60,3 +64,7 @@ Ship.prototype = {
     }
 };
 module.exports = Ship;
+var config;
+exports.config = function(conf){
+    config=conf;
+}
