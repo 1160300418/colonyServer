@@ -2,20 +2,20 @@ var canvas = document.getElementById('main_canvas'),
     ctx = canvas.getContext('2d'),
     background = new Image(),
     res = new Image();
-background.src = './images/background.main.jpg';
-res.src = './images/resources.png';
+background.src = './images/background.main.jpg'; //主界面的背景图
+res.src = './images/resources.png'; //图标资源
 
-var camp = 1,
-    ratio = 1,
-    lastSelect,
-    lastTime, //calculate Fps
-    timer = 0,
-    debug = false,
-    pause = false,
-    zoom = 1,
-    fps = 60,
-    mapSelect,
-    uievent = false;
+var camp = 1, //阵营
+    ratio = 1, //客户端的
+    lastSelect, //只点击星球一次时
+    lastTime, //上一帧的时间，计算fps
+    timer = 0, //游戏进行的时间
+    debug = false, //显示调试信息
+    pause = false, //是否暂停游戏
+    zoom = 1, //界面相对于2000*1000的缩放倍率
+    fps = 60, //fps
+    mapSelect, //所选地图在data数组中的索引
+    uievent = false; //是否运行过controlUI，防止多次注册事件
 
 var innerMapData = {
     "maps": [{
@@ -23,8 +23,8 @@ var innerMapData = {
             [400, 400, 2, 1, 1],
             [1200, 800, 1, 2, 1]
         ],
-        "equality": false,
-        "maxCamp": 2
+        "equality": false, //地图是否对所以玩家平等
+        "maxCamp": 2 //最大玩家数
     }, {
         "map": [
             [400, 400, 1, 1, 1],
@@ -165,37 +165,37 @@ var innerMapData = {
     }],
     "date": "2017.1.24",
     "author": "w12101111"
-};
+}; //内置地图
 
 var config = {
-    maxPopulation: 20,
-    initPopulation: 10,
-    maxCamp: 6, //match colonyUI.color.length
-    globalSpeed: 1,
-    growthSpeed: 1,
-    shipSpeed: 100,
-    starspeed: 0.04,
-    combatSpeed: 3.5,
-    captureSpeed: 0.2,
-    shootSpeed: 1.5,
-    shootRange: 100,
-    aiThinkSpeed: 500
+    maxPopulation: 20, //size为1时最大人口
+    initPopulation: 10, //开局时每个camp不为0且type为1或3的星球size为1时的人口
+    maxCamp: 6, //最大阵营数
+    globalSpeed: 1, //公共速度
+    growthSpeed: 1, //人口增长速度
+    shipSpeed: 100, //飞船飞行速度
+    starspeed: 0.04, //行星移动速度
+    combatSpeed: 3.5, //战斗速度
+    captureSpeed: 0.2, //对行星的占领速度
+    shootSpeed: 1.5, //可攻击行星的攻击速度
+    shootRange: 100, //可攻击行星的攻击范围
+    aiThinkSpeed: 500 //本地AI的运行间隔
 };
-var color = ["DimGray", "Orchid", "SpringGreen", "OrangeRed", "DodgerBlue", "Black"];
+var color = ["DimGray", "Orchid", "SpringGreen", "OrangeRed", "DodgerBlue", "Black", "IndianRed"]; //对应各camp的颜色
 var resValue = {
-    OffSetX: [0, 0],
+    OffSetX: [0, 0], //res图片的x起始坐标
     OffSetY: [0, 0],
-    w: [180, 180],
+    w: [180, 180], //res图片一个图标的宽度
     h: [180, 180]
 };
 
 
-var data = {};
-var stars = [];
-var ships = [];
+var data = {}; //地图集
+var stars = []; //行星对象的数组
+var ships = []; //飞船对象的数组
 
-function canvasResize() {
-    ctx.scale(1 / zoom, 1 / zoom);
+function canvasResize() { //窗口缩放时运行，使canvas全屏
+    ctx.scale(1 / zoom, 1 / zoom); //将原缩放恢复
     var w = window.innerWidth,
         h = window.innerHeight;
     var s = w / 2 > h;
@@ -203,21 +203,18 @@ function canvasResize() {
     ctx.canvas.width = window.innerWidth;
     ctx.canvas.height = window.innerHeight;
     ctx.scale(zoom, zoom);
-    $("#shipRatio").css("margin-left", window.innerWidth / 2 - 250 + "px");
-    if (h > w) {
-        console.log("Please resize your window");
-    }
+    $("#shipRatio").css("margin-left", window.innerWidth / 2 - 250 + "px"); //保证滑动条居中
 }
 
-function windowTocanvas(canvas, x, y) {
+function windowTocanvas(canvas, x, y) { //获取坐标
     var bbox = canvas.getBoundingClientRect();
     return {
         x: (x - bbox.left * (canvas.width / bbox.width)) / zoom,
-        y: (y - bbox.top * (canvas.height / bbox.height)) / zoom
+        y: (y - bbox.top * (canvas.height / bbox.height)) / zoom //返回的是相对于2000*1000的坐标
     };
 }
 
-function calculateFpsAndTime() {
+function calculateFpsAndTime() { //计算fps和总时间
     var now = Date.now();
     timer += now - lastTime;
     fps = 1000 / (now - lastTime);
@@ -230,7 +227,7 @@ function distance(x1, y1, x2, y2) {
     return Math.sqrt((x2 - x1) * (x2 - x1) + (y2 - y1) * (y2 - y1));
 }
 
-function drawBackground() {
+function drawBackground(callback2) { //绘制背景
     function imageLoad(callback) {
         if (background.complete) {
             callback.call(background);
@@ -243,6 +240,7 @@ function drawBackground() {
     try {
         imageLoad(function () {
             ctx.drawImage(this, 0, 0, canvas.width / zoom, canvas.height / zoom);
+            if(callback2)callback2();
         });
     } catch (e) {
         console.log("background load fail!" + e);
@@ -250,68 +248,72 @@ function drawBackground() {
 }
 
 
-function shipOut(from, to, camp, ratio, isReceive) {
-    if (from === to) return;
+function shipOut(from, to, camp, ratio, isReceive) { //移动飞船
+    if (from === to) return; //from：飞船出发的星球索引，to：飞船前往的星球索引，camp：飞船的阵营，ratio：派走的比例
     if (!stars[from].population[camp]) return;
-    var movePopulation = parseInt((stars[from].population[camp] * ratio).toFixed());
+    var movePopulation = stars[from].population[camp] * ratio; //不必为整数
     stars[from].out(movePopulation, camp);
     var shipArray = [stars[from].x, stars[from].y, from, to, camp, movePopulation, stars[from].x, stars[from].y]
-    var aship = new Ship(shipArray /*, ships.length*/ );
-    if (connected && !isReceive) {
-        sendMsg(JSON.stringify({
+    var aship = new Ship(shipArray);
+    if (connected && !isReceive) { //isReceive为真，表示该操作为服务器传来，无需再向服务器发送
+        sendMsg(JSON.stringify({ //发送操作
             type: "ship",
             ship: [from, to, camp, ratio]
         }));
     }
-    ships.push(aship);
+    ships.push(aship); //推入ships队列
 }
 
 
-function title() {
-    canvasResize();
-    drawBackground();
-    ctx.textAlign = "center";
-    ctx.textBaseline = "middle";
-    ctx.font = "160pt Arial";
-    ctx.fillText("colony", 1000, 400);
-    ctx.font = "42pt Arial";
-    ctx.fillStyle = "black";
-    ctx.fillText("click to start", 1000, 800);
+function title() { //加载后的初始界面
+    drawBackground(function () {
+        ctx.textAlign = "center";
+        ctx.textBaseline = "middle";
+        ctx.font = "160pt Arial";
+        ctx.fillText("colony", 1000, 400);
+        ctx.font = "42pt Arial";
+        ctx.fillStyle = "black";
+        ctx.fillText("click to start", 1000, 800);
+    });
 }
 
-function init() {
+
+function init() { //程序入口
+    window.addEventListener("resize", canvasResize); //缩放时执行
     window.addEventListener("resize", title);
+    canvasResize();
     title();
-    setTimeout(function () {
-        title();
-    }, 500);
-    document.getElementById("connect").onclick = function (e) {
+    document.getElementById("connect").onclick = function (e) {//连接服务器
         wsUrl = document.getElementById("ip").value;
         id = document.getElementById("id").value;
-        if (parseInt(wsUrl)) wsUrl += "ws://";
         if (!id) {
             alert("Id must not be empty");
             return;
         }
         createWebSocket(wsUrl);
+        $("#connect").hide();
+        $("#ip").hide();
+        $("#id").hide();
     };
-    document.getElementById("cancel").onclick = function () {
+    document.getElementById("cancel").onclick = function () { //取消等待
         sendMsg(JSON.stringify({
             type: "exit",
             id: id,
             uuid: uuid
         }));
         reconnect = true;
+        id=undefined;
+        uuid=undefined;
         ws.close();
     };
-    document.getElementById("main_canvas").onclick = function (e) {
+    document.getElementById("main_canvas").onclick = function (e) { //使用内置地图
         $(".file").hide();
         data = innerMapData;
         main(0);
         this.onclick = undefined;
         window.removeEventListener("resize", title);
     };
-    document.getElementById("file").addEventListener("change", function (e) {
+    document.getElementById("file").onchange = function (e) {
         var selectedFile = e.target.files[0];
         var reader = new FileReader();
         reader.readAsText(selectedFile);
@@ -321,7 +323,7 @@ function init() {
             main(0);
             window.removeEventListener("resize", title);
         };
-    });
+    }
 }
 
 function main(status) {
@@ -344,25 +346,20 @@ function main(status) {
         document.getElementById("main_canvas").onclick = undefined;
         $(".file").hide();
         var title = function () {
-            canvasResize();
-            drawBackground();
-            ctx.textAlign = "center";
-            ctx.textBaseline = "middle";
-            ctx.font = "160pt Arial";
-            ctx.fillText("colony", 1000, 400);
-            ctx.font = "42pt Arial";
-            ctx.fillStyle = "black";
-            ctx.fillText("wait for other player ...", 1000, 800);
+            drawBackground(function () {
+                ctx.textAlign = "center";
+                ctx.textBaseline = "middle";
+                ctx.font = "160pt Arial";
+                ctx.fillText("colony", 1000, 400);
+                ctx.font = "42pt Arial";
+                ctx.fillStyle = "black";
+                ctx.fillText("wait for other player ...", 1000, 800);
+            });
         };
         window.addEventListener("resize", title);
         title();
-        setTimeout(function () {
-            title();
-        }, 500);
         $("#pos").hide();
         $("#cancel").show();
-        canvasResize();
-        drawBackground();
         return;
     }
     canvasResize();
@@ -394,6 +391,7 @@ function loadMap() {
     pause = false;
     lastTime = Date.now();
     timer = 0;
+    config.maxCamp = data.maps[mapSelect - 1].maxCamp;
     for (var i = 0, len = data.maps[mapSelect - 1].map.length; i < len; i++) {
         var starArray = data.maps[mapSelect - 1].map[i];
         var astar = new Star(starArray, i);
@@ -411,6 +409,7 @@ function controlUI() {
     if (uievent) {
         return;
     }
+    document.getElementById("main_canvas").onclick = undefined;
     canvas.addEventListener("touchstart", function (e) {
         select(e);
         e.preventDefault();
@@ -420,7 +419,6 @@ function controlUI() {
         e.preventDefault();
     });
     window.addEventListener("resize", function () {
-        canvasResize();
         updateFrame();
     });
     document.getElementById("pause").onclick = function (e) {
@@ -429,7 +427,7 @@ function controlUI() {
         pause = !pause;
         this.innerText = pause ? "Start" : "Pause";
         if (!pause) {
-            lastTime = Date.now();
+            lastTime = Date.now(); //不把暂停时间计入总时间
             animation();
         }
     };
@@ -520,18 +518,18 @@ function wincheck() {
     if (allPopulation[1]) {
         fail = false;
     }
-     if (win) {
-         setTimeout(function () {
-             pause = true;
-             //main(1);
-         }, 500);
-     }
-     if (fail) {
-         setTimeout(function () {
-             pause = true;
-             //main(2);
-         }, 500);
-     }
+    if (win) {
+        setTimeout(function () {
+            pause = true;
+            //main(1);
+        }, 500);
+    }
+    if (fail) {
+        setTimeout(function () {
+            pause = true;
+            //main(2);
+        }, 500);
+    }
 }
 
 function animation() {

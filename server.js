@@ -61,7 +61,7 @@ console.log("Server is running at " + httpport);
 
 var clients = [];
 var data = {
-    map:undefined,
+    map: undefined,
     stars: [],
     ships: [],
     maxCamp: 6
@@ -84,7 +84,7 @@ wss.broadcast = function broadcast(msg) {
 };
 
 wss.on('connection', function (ws) {
-    console.log('connected ,' + (clients.length + 1) + " clients now");
+    console.log('connected ,' + clients.length + " clients now");
     ws.on('message', function (message) {
         if (message == "ping") {
             ws.send("pong");
@@ -109,16 +109,16 @@ wss.on('connection', function (ws) {
                             "maxCamp": data.maxCamp
                         }
                     }));
-                    setTimeout(function(){
+                    setTimeout(function () {
                         wss.broadcast(JSON.stringify({
-                            type:"start"
+                            type: "start"
                         }))
                         colony.loadMap(data);
                         running = true;
-                    },1000);
+                    }, 1000);
                     break;
                 case "ship":
-                    colony.shipOut(msg.ship[0], msg.ship[1], msg.ship[2], msg.ship[3],data);
+                    colony.shipOut(msg.ship[0], msg.ship[1], msg.ship[2], msg.ship[3], data);
                     wss.broadcast(message);
                     break;
             }
@@ -127,14 +127,14 @@ wss.on('connection', function (ws) {
             console.log(message);
         }
     });
-    setInterval(function(){
-        if(running){
+    setInterval(function () {
+        if (running) {
             wss.broadcast(JSON.stringify({
-                type:"sync",
-                data:colony.converter(data)
+                type: "sync",
+                data: colony.converter(data)
             }));
         }
-    },3000);
+    }, 3000);
 });
 
 function login(ws, msg) {
@@ -142,10 +142,14 @@ function login(ws, msg) {
     ws.uuid = msg.uuid;
     if (ws.id == "admin") {
         if (admin) {
-            ws.send(JSON.stringify({
-                type: "exit",
-                reason: "administrator is existent"
-            }));
+            if (admin.uuid == ws.uuid) {
+                admin = ws;
+            } else {
+                ws.send(JSON.stringify({
+                    type: "exit",
+                    reason: "administrator is existent"
+                }));
+            }
         } else {
             admin = ws;
             ws.isadmin = true;

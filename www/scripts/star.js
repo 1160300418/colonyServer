@@ -173,7 +173,7 @@ Star.prototype = {
         }
     },
     grow: function () {
-        if (this.atWar || this.capturing || camp === 0 || this.type !== 1 && this.type !== 3) return;
+        if (this.atWar || this.capturing || this.camp === 0 || this.type !== 1 && this.type !== 3) return;
         if (this.population[this.camp] < this.size * config.maxPopulation) {
             this.population[this.camp] += config.growthSpeed * config.globalSpeed / fps;
         }

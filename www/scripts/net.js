@@ -1,5 +1,5 @@
 var ws; //websocket实例
-var lockReconnect = false; //避免重复连接
+var reconnectCount = 0; //避免重复连接
 var pingTime;
 var ping;
 var connected = false;
@@ -7,6 +7,8 @@ var isadmin = false;
 var wsUrl = 'ws://localhost:8888';
 var id;
 var uuid;
+
+document.getElementById("ip").value = "ws://" + window.location.hostname + ":8888";
 //thanks http://www.cnblogs.com/1wen/p/5808276.html
 function createWebSocket(url) {
     try {
@@ -19,7 +21,7 @@ function createWebSocket(url) {
 
 function initEventHandle() {
     ws.onclose = function () {
-        console.log("connection close?");
+        console.log("connection close");
         reconnect(wsUrl);
     };
     ws.onerror = function () {
@@ -28,40 +30,40 @@ function initEventHandle() {
     };
     ws.onopen = function () {
         //心跳检测重置
-        $("#connect").hide();
-        $("#ip").hide();
-        $("#id").hide();
         console.log("connected");
+        reconnectCount = 0;
         connected = true;
         login();
         if (!isadmin) {
             main(4);
         }
-        heartCheck.reset().start();
+        heartCheck.reset();
     };
     ws.onmessage = function (e) {
         //如果获取到消息，心跳检测重置
         //拿到任何消息都说明当前连接是正常的
         openMsg(e.data);
-        heartCheck.reset().start();
+        heartCheck.reset();
     };
 }
 
 function reconnect(url) {
-    if (lockReconnect) {
-        console.log("connection loss");
+    if (reconnectCount > 5) {
+        if (id) {
+            console.log("connection loss");
+        }else{
+            console.log(ip+" is not a WebSocket server")
+        }
         connected = false;
-        main(3);
         $("#connect").show();
         $("#ip").show();
         $("#id").show();
+        init();
         return;
     }
-    lockReconnect = true;
-    //没连接上会一直重连，设置延迟避免请求过多
+    reconnectCount++;
     setTimeout(function () {
         createWebSocket(url);
-        lockReconnect = false;
     }, 2000);
 }
 
@@ -73,9 +75,10 @@ var heartCheck = {
     reset: function () {
         clearTimeout(this.timeoutObj);
         clearTimeout(this.serverTimeoutObj);
-        return this;
+        this.start();
     },
     start: function () {
+        reconnectCount = 0;
         var self = this;
         this.timeoutObj = setTimeout(function () {
             //这里发送一个心跳，后端收到后，返回一个心跳消息，
@@ -129,7 +132,7 @@ function openMsg(message) {
                 loadMap();
                 break;
             case "exit":
-                lockReconnect = true;
+                reconnectCount = 6;
                 reconnect(wsUrl);
                 break;
             case "ship":
@@ -147,7 +150,7 @@ function login() {
     if (id == "admin") {
         isadmin = true;
     }
-    uuid = creatuuid();
+    uuid = uuid || creatuuid();
     sendMsg(JSON.stringify({
         type: "login",
         id: id,
